@@ -85,4 +85,13 @@ Doctor dashboard development
 Phase 5
 Integration and testing
 
+| Metric                      | One-Line Explanation                                                                                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Doctor Ratio**            | Although the national doctor ratio is around **1:811**, in many rural regions it is estimated to be **close to 1:11,000**, indicating severe shortage of medical professionals. |
+| **Specialist Availability** | Urban hospitals have better specialist access, while **around 80% of specialist positions remain vacant in rural public health centers**.                                       |
+| **Diagnostic Access**       | Urban populations have easy access to private labs, but **less than 40% of rural populations have reliable access to diagnostic facilities**.                                   |
+| **Insurance Coverage**      | Despite government schemes covering about **50% of the population**, many rural patients still rely heavily on **out-of-pocket medical expenses**.                              |
+
+
+
 TEAM : HackStorm
