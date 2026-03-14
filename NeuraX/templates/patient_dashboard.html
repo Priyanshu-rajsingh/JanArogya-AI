@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NeuraX Patient Dashboard - Enter your symptoms and vitals for AI-powered health risk assessment.">
+    <title>Patient Dashboard | JanArogyaAI Healthcare</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+    <script src="/static/js/translations.js"></script>
+    <style>
+        /* AI Voice Assistant Styles */
+        .ai-voice-widget {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .ai-fab {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        .ai-fab:hover { transform: scale(1.1); }
+        .ai-chat-window {
+            width: 320px;
+            height: 400px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        .ai-chat-header {
+            background: var(--gradient-primary);
+            padding: 12px 16px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .ai-chat-body {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .ai-msg {
+            align-self: flex-start;
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid var(--primary-400);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+            max-width: 85%;
+        }
+        .user-msg {
+            align-self: flex-end;
+            background: var(--bg-surface);
+            border-right: 3px solid var(--accent-400);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            max-width: 85%;
+        }
+        .ai-chat-footer {
+            padding: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+        .pulsing-mic {
+            animation: pulse-mic 1.5s infinite;
+        }
+        @keyframes pulse-mic {
+            0% { background: var(--gradient-primary); }
+            50% { background: #ef4444; }
+            100% { background: var(--gradient-primary); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-grid"></div>
+    <div class="bg-orbs">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
+
+    <!-- Floating Particles -->
+    <div class="floating-particles" id="floatingParticles"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Analyzing your health data...</div>
+        <div class="loading-subtext">AI model is processing symptoms and vital parameters</div>
+    </div>
+
+    <!-- Embedded Map Modal -->
+    <div class="map-modal-overlay" id="mapModalOverlay">
+        <div class="map-modal">
+            <div class="map-modal-header">
+                <div class="map-route-info">
+                    <div class="map-route-from">
+                        <span class="route-dot from"></span>
+                        <span id="mapSourceText">Your Location</span>
+                    </div>
+                    <div class="map-route-arrow">→</div>
+                    <div class="map-route-to">
+                        <span class="route-dot to"></span>
+                        <span id="mapDestText">Hospital</span>
+                    </div>
+                </div>
+                <button class="map-close-btn" onclick="closeMapModal()">✕</button>
+            </div>
+            <div class="map-modal-body">
+                <iframe id="mapIframe" class="map-iframe" frameborder="0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">🧬</div>
+            <span class="nav-title">JanArogyaAI</span>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link" data-i18n="nav_home">Home</a>
+            <a href="/patient" class="nav-link active" data-i18n="nav_patient">Patient Portal</a>
+            <a href="/hospital" class="nav-link" data-i18n="nav_hospital">Hospital Portal</a>
+            <div class="lang-selector">
+                <span class="lang-icon">🌐</span>
+                <select id="langSelect" class="lang-dropdown" onchange="setLanguage(this.value)">
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="te">తెలుగు</option>
+                    <option value="ta">தமிழ்</option>
+                    <option value="bn">বাংলা</option>
+                    <option value="mr">मराठी</option>
+                </select>
+            </div>
+            <span class="security-badge">🔒 <span data-i18n="nav_encrypted">AES-256 Encrypted</span></span>
+        </div>
+    </nav>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">
+                🩺 <span data-i18n="patient_title">AI Health Screening</span>
+            </h1>
+            <p class="dashboard-subtitle" data-i18n="patient_subtitle">
+                Enter your details for AI-powered health risk analysis and disease prediction
+            </p>
+        </div>
+
+        <div class="dashboard-content">
+            <!-- Patient Information -->
+            <div class="form-section animate-in" id="patientInfoSection">
+                <h2 class="form-section-title">👤 <span data-i18n="section_info">Patient Information</span></h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="patientName" data-i18n="lbl_name">Full Name</label>
+                        <input type="text" class="form-input" id="patientName" placeholder="Enter your full name" data-i18n-ph="ph_name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="patientAge" data-i18n="lbl_age">Age</label>
+                        <input type="number" class="form-input" id="patientAge" placeholder="Enter age" min="1" max="120" data-i18n-ph="ph_age">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="patientGender" data-i18n="lbl_gender">Gender</label>
+                        <select class="form-select" id="patientGender">
+                            <option value="" data-i18n="opt_gender">Select Gender</option>
+                            <option value="male" data-i18n="opt_male">Male</option>
+                            <option value="female" data-i18n="opt_female">Female</option>
+                            <option value="other" data-i18n="opt_other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="patientLocation" data-i18n="lbl_location">Location</label>
+                        <input type="text" class="form-input" id="patientLocation" placeholder="City or village" data-i18n-ph="ph_location">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="patientContact" data-i18n="lbl_contact">Contact Number</label>
+                        <input type="tel" class="form-input" id="patientContact" placeholder="Phone number" data-i18n-ph="ph_contact">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Symptoms Selection -->
+            <div class="form-section animate-in" id="symptomsSection">
+                <h2 class="form-section-title">🩻 <span data-i18n="section_symptoms">Select Your Symptoms</span></h2>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;" data-i18n="symptoms_desc">
+                    Click on all symptoms that you are currently experiencing
+                </p>
+                <div class="symptom-grid" id="symptomGrid">
+                    <!-- Symptoms will be loaded dynamically -->
+                </div>
+                <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted);">
+                    <span data-i18n="selected_count">Selected:</span> <span id="selectedCount" style="color: var(--primary-400); font-weight: 600;">0</span> <span data-i18n="symptom_unit">symptom(s)</span>
+                </div>
+
+                <!-- Free-text symptom description -->
+                <div style="margin-top: 24px;">
+                    <label class="form-label" for="symptomDescription">✍️ <span data-i18n="section_describe">Describe Your Symptoms</span></label>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px;" data-i18n="describe_text">
+                        Write about your symptoms in detail — when they started, their severity, or any other information you think is relevant.
+                    </p>
+                    <textarea class="form-input" id="symptomDescription" rows="4" 
+                        placeholder="E.g., I've been having a severe headache for the past 3 days..." data-i18n-ph="ph_describe"
+                        style="resize: vertical; min-height: 100px; width: 100%;"></textarea>
+                </div>
+            </div>
+
+            <!-- Image Upload Section -->
+            <div class="form-section animate-in" id="imageUploadSection">
+                <h2 class="form-section-title">📷 <span data-i18n="section_upload">Upload Medical Images (Optional)</span></h2>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;" data-i18n="upload_desc">
+                    Upload photos of skin conditions, injuries, test reports, or any relevant medical documents for the doctor to review.
+                </p>
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-zone-content">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text" data-i18n="upload_drag">Drag & drop images here</div>
+                        <div class="upload-subtext" data-i18n="upload_or">or click to browse files</div>
+                        <div class="upload-formats" data-i18n="upload_formats">Supports: JPG, PNG, WEBP, PDF — Max 5MB per file</div>
+                    </div>
+                    <input type="file" id="imageInput" multiple accept="image/*,.pdf" style="display: none;">
+                </div>
+                <div class="image-preview-grid" id="imagePreviewGrid">
+                    <!-- Image previews will appear here -->
+                </div>
+            </div>
+
+            <!-- Vital Parameters -->
+            <div class="form-section animate-in" id="vitalsSection">
+                <h2 class="form-section-title">💓 <span data-i18n="section_vitals">Vital Parameters</span></h2>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;" data-i18n="vitals_desc">
+                    Enter your current vital signs if available. Only the vitals you enter will appear in the analysis.
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="heartRate" data-i18n="lbl_hr">Heart Rate (BPM)</label>
+                        <input type="number" class="form-input" id="heartRate" placeholder="60-100 normal" min="30" max="220">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="systolicBP" data-i18n="lbl_sbp">Systolic Blood Pressure</label>
+                        <input type="number" class="form-input" id="systolicBP" placeholder="90-120 normal" min="60" max="250">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="diastolicBP" data-i18n="lbl_dbp">Diastolic Blood Pressure</label>
+                        <input type="number" class="form-input" id="diastolicBP" placeholder="60-80 normal" min="30" max="150">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="temperature" data-i18n="lbl_temp">Body Temperature (°F)</label>
+                        <input type="number" class="form-input" id="temperature" placeholder="97-99 normal" min="90" max="110" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="spo2" data-i18n="lbl_spo2">SpO2 Level (%)</label>
+                        <input type="number" class="form-input" id="spo2" placeholder="95-100 normal" min="50" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="bmi" data-i18n="lbl_bmi">BMI</label>
+                        <input type="number" class="form-input" id="bmi" placeholder="18.5-24.9 normal" min="10" max="60" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div style="text-align: center; margin-bottom: 40px;" class="animate-in">
+                <button class="btn btn-primary btn-lg" id="analyzeBtn" onclick="analyzeHealth()">
+                    🔬 <span data-i18n="btn_analyze">Analyze Health Risk</span>
+                </button>
+                <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);" data-i18n="btn_note">
+                    Your data is processed by our AI model and encrypted end-to-end
+                </p>
+            </div>
+
+            <!-- Results Section (hidden initially) -->
+            <div class="results-container" id="resultsContainer">
+                <!-- Risk Score -->
+                <div class="risk-gauge animate-in">
+                    <div class="risk-circle" id="riskCircle">
+                        <div class="score" id="riskScoreValue">--</div>
+                        <div class="score-label" data-i18n="risk_score_label">RISK SCORE</div>
+                    </div>
+                    <div class="result-header" style="justify-content: center; margin-bottom: 0;">
+                        <span class="risk-badge" id="riskBadge">--</span>
+                        <span class="triage-badge" id="triageBadge">--</span>
+                        <span class="security-badge">🔒 <span data-i18n="encrypted_result">Encrypted Result</span></span>
+                    </div>
+                </div>
+
+                <!-- Recommendation -->
+                <div class="recommendation-box" id="recommendationBox">
+                    <div class="recommendation-title" id="recommendationTitle"></div>
+                    <p class="recommendation-desc" id="recommendationDesc"></p>
+                </div>
+
+                <!-- Disease Prediction -->
+                <div class="form-section animate-in" id="diseasePredictionSection" style="display: none;">
+                    <h2 class="form-section-title">🦠 <span data-i18n="section_disease">Possible Disease Predictions</span></h2>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;" data-i18n="disease_desc">
+                        Based on your symptoms, the AI model has identified the following possible conditions:
+                    </p>
+                    <div id="diseasePredictions"></div>
+                </div>
+
+                <!-- Results Grid -->
+                <div class="results-grid">
+                    <div class="result-card animate-in">
+                        <div class="result-card-header">📊 <span data-i18n="section_risk">Risk Level Analysis</span></div>
+                        <div id="riskProbabilities"></div>
+                    </div>
+                    <div class="result-card animate-in">
+                        <div class="result-card-header">🏷️ <span data-i18n="section_triage">Triage Classification</span></div>
+                        <div id="triageProbabilities"></div>
+                    </div>
+                    <div class="result-card animate-in">
+                        <div class="result-card-header">🧠 <span data-i18n="section_factors">Contributing Factors (XAI)</span></div>
+                        <div id="contributingFactors"></div>
+                    </div>
+                    <div class="result-card animate-in" id="vitalAnalysisCard">
+                        <div class="result-card-header">💓 <span data-i18n="section_vitals_result">Vital Signs Analysis</span></div>
+                        <div class="vital-grid" id="vitalAnalysis"></div>
+                    </div>
+                </div>
+
+                <!-- Nearest Hospitals -->
+                <div class="form-section animate-in" id="hospitalFinderSection" style="display: none;">
+                    <h2 class="form-section-title">🏥 <span data-i18n="section_hospitals">Recommended Hospitals Near You</span></h2>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 8px;" data-i18n="hospitals_desc">
+                        Based on the specialist needed for your condition, here are nearby hospitals:
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;" id="locationStatus">
+                        📍 <span data-i18n="detecting_location">Detecting your location...</span>
+                    </p>
+                    <div id="hospitalsList"></div>
+                </div>
+
+                <!-- Patient ID Card -->
+                <div class="form-section animate-in" style="text-align: center;">
+                    <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 8px;" data-i18n="lbl_patient_id">Your Patient ID</div>
+                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: var(--primary-400);" id="patientIdDisplay">--</div>
+
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 8px;" data-i18n="patient_id_note">
+                        Save this ID for reference. Your records have been securely sent to the hospital dashboard.
+                    </p>
+                    <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-secondary" onclick="resetForm()">🔄 <span data-i18n="btn_new">New Screening</span></button>
+                        <button class="btn btn-primary" onclick="window.print()">🖨️ <span data-i18n="btn_print">Print Report</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice AI Assistant -->
+    <div id="aiVoiceWidget" class="ai-voice-widget">
+        <div class="ai-chat-window" id="aiChatWindow" style="display: none;">
+            <div class="ai-chat-header">
+                <span>🎙️ JanArogya Voice AI</span>
+                <button onclick="toggleAiChat()" style="background:none;border:none;color:white;cursor:pointer;font-size:16px;">✕</button>
+            </div>
+            <div class="ai-chat-body" id="aiChatBody">
+                <div class="ai-msg">Tap the mic and tell me your name, age, gender, and what you are feeling today. I will fill out the form for you!</div>
+            </div>
+            <div class="ai-chat-footer">
+                <button id="aiMicBtn" onclick="toggleVoiceRecording()" class="btn btn-primary" style="width:100%; border:none; padding:12px; font-weight:600;"><span id="aiMicIcon">🎤</span> Speak Now</button>
+            </div>
+        </div>
+        <button class="ai-fab" onclick="toggleAiChat()" id="aiFabBtn">
+            🎙️
+        </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p><span data-i18n="footer_text">© 2026 NeuraX — AI-Powered Remote Healthcare Platform</span> | 
+        <span class="security-badge" style="margin-left: 8px;">🔒 <span data-i18n="footer_hipaa">HIPAA Compliant</span></span></p>
+    </footer>
+
+    <script>
+        // ====== Symptom Loading ======
+        const selectedSymptoms = new Set();
+
+        async function loadSymptoms() {
+            try {
+                const response = await fetch('/api/symptoms');
+                const data = await response.json();
+                const grid = document.getElementById('symptomGrid');
+                grid.innerHTML = '';
+                const symTrans = SYMPTOM_TRANSLATIONS[currentLang] || SYMPTOM_TRANSLATIONS.en;
+                data.symptoms.forEach(symptom => {
+                    const chip = document.createElement('div');
+                    chip.className = 'symptom-chip';
+                    chip.setAttribute('data-symptom', symptom.key);
+                    chip.textContent = symTrans[symptom.key] || symptom.display_name;
+                    chip.onclick = () => toggleSymptom(chip, symptom.key);
+                    grid.appendChild(chip);
+                });
+            } catch (error) {
+                console.error('Error loading symptoms:', error);
+            }
+        }
+
+        function toggleSymptom(chip, symptomId) {
+            if (selectedSymptoms.has(symptomId)) {
+                selectedSymptoms.delete(symptomId);
+                chip.classList.remove('selected');
+            } else {
+                selectedSymptoms.add(symptomId);
+                chip.classList.add('selected');
+            }
+            document.getElementById('selectedCount').textContent = selectedSymptoms.size;
+        }
+
+        // ====== Image Upload Handling ======
+        let uploadedFiles = [];
+
+        function initUploadZone() {
+            const zone = document.getElementById('uploadZone');
+            const input = document.getElementById('imageInput');
+
+            // Click to browse
+            zone.addEventListener('click', () => input.click());
+
+            // File input change
+            input.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+                input.value = ''; // reset so same file can be re-added
+            });
+
+            // Drag & Drop
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                handleFiles(e.dataTransfer.files);
+            });
+        }
+
+        function handleFiles(files) {
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            for (const file of files) {
+                if (file.size > maxSize) {
+                    showToast(`File "${file.name}" exceeds 5MB limit`, 'error');
+                    continue;
+                }
+                if (uploadedFiles.length >= 5) {
+                    showToast('Maximum 5 files allowed', 'error');
+                    break;
+                }
+                uploadedFiles.push(file);
+                addImagePreview(file);
+            }
+        }
+
+        function addImagePreview(file) {
+            const grid = document.getElementById('imagePreviewGrid');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-preview-item';
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (file.type === 'application/pdf') {
+                    wrapper.innerHTML = `
+                        <div class="preview-pdf">
+                            <span style="font-size: 32px;">📄</span>
+                            <span class="preview-filename">${file.name}</span>
+                        </div>
+                        <button class="preview-remove" onclick="removeFile(this, '${file.name}')" title="Remove">✕</button>
+                    `;
+                } else {
+                    wrapper.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}" class="preview-img">
+                        <button class="preview-remove" onclick="removeFile(this, '${file.name}')" title="Remove">✕</button>
+                        <span class="preview-filename">${file.name}</span>
+                    `;
+                }
+            };
+            reader.readAsDataURL(file);
+            grid.appendChild(wrapper);
+        }
+
+        function removeFile(btn, fileName) {
+            uploadedFiles = uploadedFiles.filter(f => f.name !== fileName);
+            btn.closest('.image-preview-item').remove();
+            showToast('Image removed', 'info');
+        }
+
+        // ====== Health Analysis ======
+        let lastResult = null; // Store for hospital notification
+        let userLocation = null; // Store geolocation
+
+        async function analyzeHealth() {
+            const name = document.getElementById('patientName').value.trim();
+            const age = parseInt(document.getElementById('patientAge').value);
+            const gender = document.getElementById('patientGender').value;
+            const symptomDescription = document.getElementById('symptomDescription').value.trim();
+
+            // Validation
+            if (!name) { showToast('Please enter your name', 'error'); return; }
+            if (!age || age < 1) { showToast('Please enter a valid age', 'error'); return; }
+            if (!gender) { showToast('Please select your gender', 'error'); return; }
+            if (selectedSymptoms.size === 0 && !symptomDescription) {
+                showToast('Please select symptoms or describe them in the text box', 'error'); return;
+            }
+
+            // Build vitals — only include actually entered values, track which ones
+            const vitalFields = [
+                { id: 'heartRate', key: 'heart_rate', default: 75 },
+                { id: 'systolicBP', key: 'systolic_bp', default: 120 },
+                { id: 'diastolicBP', key: 'diastolic_bp', default: 80 },
+                { id: 'temperature', key: 'temperature', default: 98.6 },
+                { id: 'spo2', key: 'spo2', default: 97 },
+                { id: 'bmi', key: 'bmi', default: 24 }
+            ];
+
+            const vitals = {};
+            const enteredVitals = [];
+            vitalFields.forEach(field => {
+                const el = document.getElementById(field.id);
+                const val = el.value.trim();
+                if (val !== '') {
+                    vitals[field.key] = parseFloat(val);
+                    enteredVitals.push(field.key);
+                } else {
+                    vitals[field.key] = field.default; // Model needs values
+                }
+            });
+
+            const patientData = {
+                name: name,
+                age: age,
+                gender: gender,
+                location: document.getElementById('patientLocation').value || 'Unknown',
+                contact: document.getElementById('patientContact').value || 'N/A',
+                symptoms: Array.from(selectedSymptoms),
+                symptom_description: symptomDescription,
+                has_images: uploadedFiles.length > 0,
+                image_count: uploadedFiles.length,
+                entered_vitals: enteredVitals,
+                vitals: vitals
+            };
+
+            // Show loading
+            document.getElementById('loadingOverlay').classList.add('show');
+            document.getElementById('analyzeBtn').disabled = true;
+
+            try {
+                // Upload images first if any
+                let imageFileNames = [];
+                if (uploadedFiles.length > 0) {
+                    const formData = new FormData();
+                    uploadedFiles.forEach(file => formData.append('images', file));
+                    
+                    const uploadRes = await fetch('/api/upload-images', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const uploadResult = await uploadRes.json();
+                    if (uploadResult.files) {
+                        imageFileNames = uploadResult.files;
+                        patientData.uploaded_images = imageFileNames;
+                    }
+                }
+
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(patientData)
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    showToast(result.error, 'error');
+                    return;
+                }
+
+                // Simulate processing time for effect
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                lastResult = result;
+                displayResults(result);
+                showToast('Health analysis complete!', 'success');
+            } catch (error) {
+                showToast('Error connecting to server. Please try again.', 'error');
+                console.error(error);
+            } finally {
+                document.getElementById('loadingOverlay').classList.remove('show');
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        // ====== Display Results ======
+        function displayResults(result) {
+            const container = document.getElementById('resultsContainer');
+            container.classList.add('show');
+
+            // Scroll to results
+            setTimeout(() => {
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+
+            // Risk Score Circle
+            const riskScore = result.risk_score;
+            const riskCircle = document.getElementById('riskCircle');
+            const riskColor = riskScore >= 60 ? 'var(--danger-500)' : riskScore >= 30 ? 'var(--warning-500)' : 'var(--accent-500)';
+            riskCircle.style.setProperty('--risk-color', riskColor);
+            riskCircle.style.setProperty('--risk-pct', riskScore + '%');
+            document.getElementById('riskScoreValue').textContent = riskScore;
+            document.getElementById('riskScoreValue').style.color = riskColor;
+
+            // Risk Badge
+            const riskBadge = document.getElementById('riskBadge');
+            riskBadge.textContent = `${result.risk_level} Risk`;
+            riskBadge.className = `risk-badge ${result.risk_level.toLowerCase()}`;
+
+            // Triage Badge
+            const triageBadge = document.getElementById('triageBadge');
+            triageBadge.textContent = `${result.triage} Triage`;
+            triageBadge.className = `triage-badge ${result.triage.toLowerCase()}`;
+
+            // Recommendation
+            const rec = result.recommendation;
+            const recBox = document.getElementById('recommendationBox');
+            recBox.className = `recommendation-box ${rec.color}`;
+            document.getElementById('recommendationTitle').innerHTML = `${rec.icon} ${rec.action}`;
+            document.getElementById('recommendationDesc').textContent = rec.description;
+
+            // ====== Disease Predictions ======
+            const diseaseSection = document.getElementById('diseasePredictionSection');
+            const diseasesDiv = document.getElementById('diseasePredictions');
+            diseasesDiv.innerHTML = '';
+
+            if (result.disease_predictions && result.disease_predictions.length > 0) {
+                diseaseSection.style.display = 'block';
+                result.disease_predictions.forEach((d, idx) => {
+                    const severityColors = {
+                        'Mild': '#10b981', 'Moderate': '#fbbf24', 'Severe': '#f87171',
+                        'Critical': '#ef4444', 'Chronic': '#a78bfa',
+                        'Mild to Moderate': '#fbbf24', 'Moderate to Severe': '#f97316'
+                    };
+                    const sevColor = severityColors[d.severity] || '#94a3b8';
+
+                    diseasesDiv.innerHTML += `
+                        <div class="disease-card" style="animation-delay: ${idx * 0.1}s">
+                            <div class="disease-header">
+                                <div class="disease-name">${d.disease}</div>
+                                <div class="disease-confidence">${d.confidence}%</div>
+                            </div>
+                            <div class="disease-meta">
+                                <span class="disease-severity" style="background: ${sevColor}20; color: ${sevColor}; border: 1px solid ${sevColor}40;">${d.severity}</span>
+                                <span class="disease-specialist">👨‍⚕️ ${d.specialist}</span>
+                            </div>
+                            <p class="disease-desc">${d.description}</p>
+                            <div class="disease-symptoms">
+                                <span style="font-size:12px;color:var(--text-muted);">Matching symptoms:</span>
+                                ${d.matching_symptoms.map(s => `<span class="disease-symptom-tag">${s}</span>`).join('')}
+                            </div>
+                            <div class="disease-confidence-bar">
+                                <div class="disease-confidence-fill" style="width: ${d.confidence}%; background: linear-gradient(90deg, var(--primary-500), ${sevColor});"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                diseaseSection.style.display = 'block';
+                diseasesDiv.innerHTML = '<p style="color: var(--text-muted); font-size: 14px;">Could not determine specific conditions from the provided symptoms. Please consult a doctor.</p>';
+            }
+
+            // Risk Probabilities
+            const riskProbs = document.getElementById('riskProbabilities');
+            riskProbs.innerHTML = '';
+            for (const [label, value] of Object.entries(result.risk_probabilities)) {
+                riskProbs.innerHTML += `
+                    <div class="prob-item">
+                        <div class="prob-label">
+                            <span>${label} Risk</span>
+                            <span>${value}%</span>
+                        </div>
+                        <div class="prob-bar">
+                            <div class="prob-fill ${label.toLowerCase()}" style="width: ${value}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Triage Probabilities
+            const triageProbs = document.getElementById('triageProbabilities');
+            triageProbs.innerHTML = '';
+            for (const [label, value] of Object.entries(result.triage_probabilities)) {
+                triageProbs.innerHTML += `
+                    <div class="prob-item">
+                        <div class="prob-label">
+                            <span>${label}</span>
+                            <span>${value}%</span>
+                        </div>
+                        <div class="prob-bar">
+                            <div class="prob-fill ${label.toLowerCase()}" style="width: ${value}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Contributing Factors (XAI)
+            const factors = document.getElementById('contributingFactors');
+            factors.innerHTML = '';
+            if (result.top_contributing_factors.length === 0) {
+                factors.innerHTML = '<p style="color: var(--text-muted); font-size: 14px;">No significant contributing factors identified.</p>';
+            } else {
+                result.top_contributing_factors.forEach(factor => {
+                    factors.innerHTML += `
+                        <div class="factor-item">
+                            <div class="factor-bar-wrapper">
+                                <div class="factor-name">${factor.feature}</div>
+                                <div class="factor-bar">
+                                    <div class="factor-fill" style="width: ${Math.min(factor.importance * 3, 100)}%;"></div>
+                                </div>
+                            </div>
+                            <div class="factor-value">${factor.importance}%</div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Vital Analysis — only show if user entered vitals
+            const vitalsCard = document.getElementById('vitalAnalysisCard');
+            const vitals = document.getElementById('vitalAnalysis');
+            vitals.innerHTML = '';
+            if (result.vital_analysis && result.vital_analysis.length > 0) {
+                vitalsCard.style.display = 'block';
+                result.vital_analysis.forEach(vital => {
+                    vitals.innerHTML += `
+                        <div class="vital-item ${vital.status}">
+                            <div class="vital-name">${vital.name}</div>
+                            <div class="vital-value">${vital.value}</div>
+                            <div class="vital-range">Normal: ${vital.normal_range}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                vitalsCard.style.display = 'none';
+            }
+
+            // Patient ID
+            document.getElementById('patientIdDisplay').textContent = result.patient_id;
+
+            // ====== Search Nearby Hospitals ======
+            if (result.specialists_needed && result.specialists_needed.length > 0) {
+                searchNearbyHospitals(result.specialists_needed, result);
+            }
+        }
+
+        // ====== Hospital Finder ======
+        async function searchNearbyHospitals(specialists, result) {
+            const section = document.getElementById('hospitalFinderSection');
+            const statusEl = document.getElementById('locationStatus');
+            const listEl = document.getElementById('hospitalsList');
+            section.style.display = 'block';
+            listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 14px;">Searching for hospitals using real-time map data...</p>';
+
+            // Try to get user's location
+            let lat = null, lng = null;
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        timeout: 8000, maximumAge: 300000
+                    });
+                });
+                lat = position.coords.latitude;
+                lng = position.coords.longitude;
+                userLocation = { lat, lng };
+                statusEl.innerHTML = `📍 Location detected — showing nearest hospitals`;
+                statusEl.style.color = 'var(--accent-400)';
+            } catch (e) {
+                statusEl.innerHTML = `📍 Location unavailable — using entered location for search`;
+                statusEl.style.color = 'var(--warning-400)';
+            }
+
+            const locationText = document.getElementById('patientLocation').value.trim();
+
+            try {
+                const response = await fetch('/api/hospitals/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ specialties: specialists, lat, lng, location: locationText })
+                });
+                const data = await response.json();
+
+                if (data.hospitals && data.hospitals.length > 0) {
+                    renderHospitals(data.hospitals, result);
+                } else {
+                    listEl.innerHTML = '<p style="color: var(--text-muted);">No matching hospitals found.</p>';
+                }
+            } catch (error) {
+                listEl.innerHTML = '<p style="color: var(--danger-400);">Error searching hospitals. Please try again.</p>';
+            }
+        }
+
+        function renderHospitals(hospitals, result) {
+            const listEl = document.getElementById('hospitalsList');
+            listEl.innerHTML = '';
+
+            hospitals.forEach((h, idx) => {
+                const distText = h.distance_km !== null ? `${h.distance_km} km away` : 'Distance N/A';
+                const typeColor = h.type === 'Government' ? 'var(--accent-400)' : 'var(--primary-400)';
+                const topDisease = result.disease_predictions?.[0]?.disease || 'General Checkup';
+
+                listEl.innerHTML += `
+                    <div class="hospital-card" style="animation-delay: ${idx * 0.08}s">
+                        <div class="hospital-header">
+                            <div>
+                                <div class="hospital-name">🏥 ${h.name}</div>
+                                <div class="hospital-city">${h.city} · <span style="color:${typeColor};font-weight:600;">${h.type}</span></div>
+                            </div>
+                            <div class="hospital-distance">${distText}</div>
+                        </div>
+                        <div class="hospital-meta">
+                            <span class="hospital-beds">🛏️ ${h.beds === 'N/A' ? 'Real-time capability' : h.beds + ' beds'}</span>
+                            <span class="hospital-phone">📞 ${h.phone}</span>
+                        </div>
+                        <div class="hospital-specialties">
+                            ${h.matched_specialties.map(s => `<span class="specialty-tag">${s}</span>`).join('')}
+                        </div>
+                        <div class="hospital-actions">
+                            <button class="btn btn-primary btn-sm" onclick="openMaps(${h.lat}, ${h.lng}, '${h.name.replace(/'/g, "\\'")}')">
+                                🗺️ Get Directions
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="notifyHospital('${h.id}', '${h.name.replace(/'/g, "\\'")}', '${topDisease.replace(/'/g, "\\'")}')">
+                                📩 Notify Hospital
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openMaps(lat, lng, name) {
+            const patientLocation = document.getElementById('patientLocation').value.trim() || 'My Location';
+            
+            // Set route info text
+            document.getElementById('mapSourceText').textContent = '📍 ' + patientLocation;
+            document.getElementById('mapDestText').textContent = '🏥 ' + name;
+            
+            // Build Google Maps embed URL (free, no API key needed)
+            const source = encodeURIComponent(patientLocation + ', India');
+            const destination = encodeURIComponent(name);
+            const embedUrl = `https://www.google.com/maps?q=${destination}&output=embed`;
+            const dirUrl = `https://maps.google.com/maps?saddr=${source}&daddr=${lat},${lng}(${destination})&output=embed`;
+            
+            const iframe = document.getElementById('mapIframe');
+            iframe.src = dirUrl;
+            
+            // Show modal
+            document.getElementById('mapModalOverlay').classList.add('show');
+            document.body.style.overflow = 'hidden';
+            showToast(`Showing route: ${patientLocation} → ${name}`, 'success');
+        }
+
+        function closeMapModal() {
+            document.getElementById('mapModalOverlay').classList.remove('show');
+            document.body.style.overflow = '';
+            document.getElementById('mapIframe').src = '';
+        }
+
+        async function notifyHospital(hospitalId, hospitalName, disease) {
+            if (!lastResult) return;
+
+            try {
+                const response = await fetch(`/api/hospitals/${hospitalId}/notify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        patient_name: document.getElementById('patientName').value,
+                        patient_id: lastResult.patient_id,
+                        disease: disease,
+                        risk_level: lastResult.risk_level,
+                        triage: lastResult.triage
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`✅ Alert sent to ${hospitalName}! They will be expecting you.`, 'success');
+                } else {
+                    showToast('Failed to send notification', 'error');
+                }
+            } catch (error) {
+                showToast('Error sending notification to hospital', 'error');
+            }
+        }
+
+        // ====== Reset Form ======
+        function resetForm() {
+            selectedSymptoms.clear();
+            document.querySelectorAll('.symptom-chip').forEach(chip => {
+                chip.classList.remove('selected');
+            });
+            document.getElementById('selectedCount').textContent = '0';
+            document.getElementById('resultsContainer').classList.remove('show');
+            document.getElementById('patientName').value = '';
+            document.getElementById('patientAge').value = '';
+            document.getElementById('patientGender').value = '';
+            document.getElementById('patientLocation').value = '';
+            document.getElementById('patientContact').value = '';
+            document.getElementById('heartRate').value = '';
+            document.getElementById('systolicBP').value = '';
+            document.getElementById('diastolicBP').value = '';
+            document.getElementById('temperature').value = '';
+            document.getElementById('spo2').value = '';
+            document.getElementById('bmi').value = '';
+            document.getElementById('symptomDescription').value = '';
+            uploadedFiles = [];
+            document.getElementById('imagePreviewGrid').innerHTML = '';
+            document.getElementById('diseasePredictionSection').style.display = 'none';
+            document.getElementById('hospitalFinderSection').style.display = 'none';
+            lastResult = null;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ====== Toast Notification ======
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `${icons[type] || 'ℹ️'} ${message}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ====== Navbar scroll ======
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // ====== Init ======
+        document.addEventListener('DOMContentLoaded', () => {
+            // Init language
+            const savedLang = localStorage.getItem('neurax_lang') || 'en';
+            currentLang = savedLang;
+            const langSel = document.getElementById('langSelect');
+            if (langSel) langSel.value = savedLang;
+            applyTranslations();
+
+            loadSymptoms();
+            initUploadZone();
+
+            // Create floating particles
+            const particleContainer = document.getElementById('floatingParticles');
+            if (particleContainer) {
+                for (let i = 0; i < 20; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.cssText = `
+                        left: ${Math.random() * 100}%;
+                        top: ${Math.random() * 100}%;
+                        width: ${Math.random() * 4 + 2}px;
+                        height: ${Math.random() * 4 + 2}px;
+                        animation-delay: ${Math.random() * 8}s;
+                        animation-duration: ${Math.random() * 10 + 8}s;
+                    `;
+                    particleContainer.appendChild(particle);
+                }
+            }
+
+            // Escape key closes map modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeMapModal();
+            });
+            // Click outside map modal to close
+            document.getElementById('mapModalOverlay')?.addEventListener('click', (e) => {
+                if (e.target.id === 'mapModalOverlay') closeMapModal();
+            });
+
+            // Intersection Observer for smooth reveal
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.animate-in').forEach(el => observer.observe(el));
+        });
+
+        // ====== Voice AI Assistant Implementation ======
+        let aiRecognition;
+        let isRecordingVoice = false;
+        let aiChatHistory = [];
+        let currentSynth = window.speechSynthesis;
+
+        function toggleAiChat() {
+            const chat = document.getElementById('aiChatWindow');
+            if(chat.style.display === 'none' || chat.style.display === '') {
+                chat.style.display = 'flex';
+                // Auto greet
+                if(aiChatHistory.length === 0) {
+                    const lang = document.getElementById('langSelect').value || 'en';
+                    let greet = "Hello, I am your medical AI assistant. Can you tell me your name, age, and what symptoms you are feeling today?";
+                    if(lang === 'hi') greet = "नमस्ते, मैं आपका मेडिकल सहायक हूं। क्या आप मुझे अपना नाम, उम्र और अपने लक्षण बता सकते हैं?";
+                    else if(lang === 'te') greet = "నమస్కారం, నేను మీ వైద్య పర్యవేక్షకుడిని. దయచేసి మీ పేరు, వయస్సు మరియు మీ సమస్యలను చెప్పగలరా?";
+                    aiSpeakText(greet);
+                }
+            } else {
+                chat.style.display = 'none';
+                if(currentSynth && currentSynth.speaking) currentSynth.cancel();
+                if(isRecordingVoice && aiRecognition) aiRecognition.stop();
+            }
+        }
+
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!SpeechRecognition) {
+                alert("Your browser does not support Voice AI. Please use Google Chrome or Microsoft Edge.");
+                return null;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            
+            // Map dropdown strictly to Speech Recognition codes
+            const langMap = { 'en': 'en-IN', 'hi': 'hi-IN', 'te': 'te-IN', 'ta': 'ta-IN', 'bn': 'bn-IN', 'mr': 'mr-IN' };
+            const selLang = document.getElementById('langSelect').value || 'en';
+            recognition.lang = langMap[selLang] || 'en-IN';
+            
+            recognition.interimResults = false;
+            
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                addAiChatMsg(transcript, 'user');
+                sendToAiBackend(transcript, recognition.lang);
+            };
+            
+            recognition.onerror = function(event) {
+                console.error("Speech Recognition Error:", event.error);
+                if(event.error === 'not-allowed') {
+                    alert("Microphone access is blocked. Please allow the microphone.");
+                }
+                isRecordingVoice = false;
+                resetMicBtn();
+            }
+            
+            recognition.onend = function() {
+                isRecordingVoice = false;
+                resetMicBtn();
+            };
+            
+            return recognition;
+        }
+        
+        function resetMicBtn() {
+            document.getElementById('aiMicIcon').textContent = '🎤';
+            document.getElementById('aiMicBtn').innerHTML = '<span id="aiMicIcon">🎤</span> Speak Now';
+            document.getElementById('aiMicBtn').classList.remove('pulsing-mic');
+            document.getElementById('aiMicBtn').disabled = false;
+        }
+
+        function toggleVoiceRecording() {
+            if(currentSynth && currentSynth.speaking) currentSynth.cancel();
+            
+            if(isRecordingVoice) {
+                if(aiRecognition) aiRecognition.stop();
+                return;
+            }
+            
+            if(!aiRecognition) {
+                aiRecognition = initSpeechRecognition();
+                if(!aiRecognition) return;
+            } else {
+                const langMap = { 'en': 'en-IN', 'hi': 'hi-IN', 'te': 'te-IN', 'ta': 'ta-IN', 'bn': 'bn-IN', 'mr': 'mr-IN' };
+                const selLang = document.getElementById('langSelect').value || 'en';
+                aiRecognition.lang = langMap[selLang] || 'en-IN';
+            }
+            
+            try {
+                aiRecognition.start();
+                isRecordingVoice = true;
+                document.getElementById('aiMicBtn').innerHTML = '<span id="aiMicIcon">⏹️</span> Listening...';
+                document.getElementById('aiMicBtn').classList.add('pulsing-mic');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function addAiChatMsg(text, sender) {
+            const body = document.getElementById('aiChatBody');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = sender === 'ai' ? 'ai-msg' : 'user-msg';
+            msgDiv.textContent = text;
+            body.appendChild(msgDiv);
+            body.scrollTop = body.scrollHeight;
+            
+            aiChatHistory.push({ role: sender === 'ai' ? 'model' : 'user', parts: text });
+        }
+
+        function aiSpeakText(text) {
+            if(!window.speechSynthesis) return;
+            currentSynth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            const langMap = { 'en': 'en-IN', 'hi': 'hi-IN', 'te': 'te-IN', 'ta': 'ta-IN', 'bn': 'bn-IN', 'mr': 'mr-IN' };
+            const selLang = document.getElementById('langSelect').value || 'en';
+            utterance.lang = langMap[selLang] || 'en-US';
+            
+            let voices = speechSynthesis.getVoices();
+            let voiceMatch = voices.find(v => v.lang.startsWith(utterance.lang.substring(0,2)));
+            if(voiceMatch) utterance.voice = voiceMatch;
+            
+            utterance.rate = 1.0;
+            currentSynth.speak(utterance);
+        }
+
+        async function sendToAiBackend(userText, langCode) {
+            document.getElementById('aiMicBtn').innerHTML = '⏳ Thinking...';
+            document.getElementById('aiMicBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/api/ai-chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        history: aiChatHistory,
+                        lang: langCode
+                    })
+                });
+                const data = await response.json();
+                
+                if(data.status === 'complete') {
+                    // Fill form automatically
+                    const p = data.patientData;
+                    if(p.name) document.getElementById('patientName').value = p.name;
+                    if(p.age) document.getElementById('patientAge').value = p.age;
+                    
+                    if(p.gender) {
+                        Array.from(document.getElementById('patientGender').options).forEach(opt => {
+                            if(opt.value.toLowerCase().startsWith(p.gender.toLowerCase()[0])) opt.selected = true;
+                        });
+                    }
+                    
+                    if(p.symptoms && Array.isArray(p.symptoms)) {
+                        p.symptoms.forEach(sym => {
+                            const chip = document.querySelector(`.symptom-chip[data-symptom="${sym}"]`);
+                            if(chip && !selectedSymptoms.has(sym)) {
+                                toggleSymptom(chip, sym);
+                            }
+                        });
+                    }
+                    
+                    if(p.description) document.getElementById('symptomDescription').value = p.description;
+                    
+                    toggleAiChat(); // Close chat UI
+                    
+                    // Trigger analyze
+                    showToast("Voice details captured! Running analysis...", "success");
+                    await analyzeHealth();
+                    
+                    if (lastResult) {
+                        const triage = lastResult.triage;
+                        const action = lastResult.recommendation ? lastResult.recommendation.action : "";
+                        const resultMsg = `Analysis complete. Patient ${p.name || ''}, your triage level is ${triage}. ${action}.`;
+                        translateAndSpeak(resultMsg, langCode);
+                    }
+                } else {
+                    addAiChatMsg(data.reply, 'ai');
+                    aiSpeakText(data.reply);
+                }
+            } catch(err) {
+                console.error(err);
+                addAiChatMsg("Sorry, I had trouble connecting to the server.", 'ai');
+            }
+            resetMicBtn();
+        }
+
+        async function translateAndSpeak(text, langCode) {
+            if(langCode.startsWith('en')) {
+                aiSpeakText(text);
+                return;
+            }
+            try {
+                const res = await fetch('/api/ai-chat/translate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: text, target_lang: langCode})
+                });
+                const data = await res.json();
+                aiSpeakText(data.translated_text);
+            } catch(e) {
+                aiSpeakText(text); // fallback
+            }
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+        }
+    </script>
+</body>
+</html>

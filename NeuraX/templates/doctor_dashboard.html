@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard | NeuraX Healthcare</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👨‍⚕️</text></svg>">
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeYFfT8-6Gp8Ny9nYlmPpxo8wlaPPqaEc",
+            authDomain: "janarogyaai-b986f.firebaseapp.com",
+            projectId: "janarogyaai-b986f",
+            storageBucket: "janarogyaai-b986f.firebasestorage.app",
+            messagingSenderId: "547534016067",
+            appId: "1:547534016067:web:8ee578af16b6f460ec8ef6"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentDoctor = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const docRef = doc(db, "doctors", user.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    currentDoctor = docSnap.data();
+                    document.getElementById('doctorNameDisplay').innerText = `Dr. ${currentDoctor.name} 👨‍⚕️`;
+                    document.getElementById('doctorSpecDisplay').innerText = currentDoctor.specialization;
+                    loadDoctorDashboard();
+                } else {
+                    alert("Doctor profile not found.");
+                    window.location.href = "/doctor_auth";
+                }
+            } else {
+                window.location.href = "/doctor_auth";
+            }
+        });
+
+        window.logoutDoctor = () => {
+            signOut(auth);
+        }
+        
+        window.currentDoctorRef = () => currentDoctor;
+    </script>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-orbs">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">🧬</div>
+            <span class="nav-title">JanArogyaAI</span>
+        </a>
+        <div class="nav-links">
+            <span style="color: var(--primary-400); font-weight: 600; margin-right: 16px;" id="doctorSpecDisplay">Specialist</span>
+            <button class="nav-btn" onclick="logoutDoctor()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary);">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <h1 class="dashboard-title" id="doctorNameDisplay">
+                        Loading...
+                    </h1>
+                    <p class="dashboard-subtitle">
+                        Your personalized queue of patients requiring your expertise.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <div class="time-display" id="currentTime"></div>
+                    <button class="btn btn-primary btn-sm" onclick="loadDoctorDashboard()">
+                        🔄 Refresh Queue
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-content">
+            <!-- Patient Table -->
+            <div class="table-container animate-in" id="patientTableContainer" style="margin-bottom: 40px;">
+                <div class="table-header">
+                    <div class="table-title">
+                        📋 Patients Needing Your Approval
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="patients-table">
+                        <thead>
+                            <tr>
+                                <th>Patient Details</th>
+                                <th>Risk Score</th>
+                                <th>Triage</th>
+                                <th>Relevant Symptoms</th>
+                                <th>Matched Disease / Need</th>
+                                <th>Files & Images</th>
+                                <th>Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doctorTableBody">
+                            <tr><td colspan="7" style="text-align:center; padding: 20px;">Tracking new patients...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let doctorPatients = [];
+
+        async function loadDoctorDashboard() {
+            try {
+                const response = await fetch('/api/patients');
+                const data = await response.json();
+                const spec = window.currentDoctorRef().specialization.toLowerCase();
+                
+                // Filter patients based on doctor's specialization or if doctor is general physician
+                doctorPatients = data.patients.filter(p => {
+                    const diseaseMatches = p.disease_predictions.some(d => d.specialist.toLowerCase().includes(spec) || spec.includes("general"));
+                    return diseaseMatches;
+                });
+                
+                renderDoctorTable(doctorPatients);
+            } catch (error) {
+                console.error('Error loading doctor dashboard:', error);
+            }
+        }
+
+        function renderDoctorTable(patients) {
+            const tbody = document.getElementById('doctorTableBody');
+            tbody.innerHTML = '';
+
+            if (patients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--text-muted);">No patients currently require your attention.</td></tr>';
+                return;
+            }
+
+            patients.sort((a, b) => b.risk_score - a.risk_score).forEach(patient => {
+                const spec = window.currentDoctorRef().specialization.toLowerCase();
+                const relevantDisease = patient.disease_predictions.find(d => d.specialist.toLowerCase().includes(spec) || spec.includes("general"));
+                
+                const symptomDisplay = patient.symptoms.slice(0, 3).map(s => s.replace(/_/g, ' ')).join(', ');
+                const riskColor = patient.risk_score >= 60 ? 'var(--danger-400)' : patient.risk_score >= 30 ? 'var(--warning-400)' : 'var(--accent-400)';
+                
+                const imgIndicator = patient.uploaded_images && patient.uploaded_images.length > 0 
+                    ? `<button class="btn btn-sm" style="background:var(--bg-glass); border:1px solid var(--border-color); color:var(--text-primary);" onclick="viewImages('${patient.id}')">📷 View ${patient.uploaded_images.length} Files</button>`
+                    : `<span style="color: var(--text-muted); font-size: 13px;">No files attached</span>`;
+
+                const actionButton = patient.status === 'Pending' || patient.status === 'Under Review'
+                    ? `<button class="btn" style="background: var(--gradient-primary); border: none; padding: 8px 16px; font-size: 13px; color: white;" onclick="approvePatient('${patient.id}')">Approve & Assign to me</button>`
+                    : `<span style="color: var(--primary-400); font-size: 13px; font-weight: 600;">✅ ${patient.status}</span>`;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="patient-name">${patient.name}</div>
+                        <div class="patient-info">${patient.age}yr, ${patient.gender} · ${patient.location}</div>
+                    </td>
+                    <td>
+                        <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: ${riskColor};">${patient.risk_score}</span>
+                    </td>
+                    <td><span class="triage-badge ${patient.triage.toLowerCase()}">${patient.triage}</span></td>
+                    <td>
+                        <span style="font-size: 13px;">${symptomDisplay}</span>
+                        ${patient.symptom_description ? `<div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">💬 ${patient.symptom_description}</div>` : ''}
+                    </td>
+                    <td>
+                        <span style="font-size: 13px; font-weight: 600; color: var(--primary-400);">${relevantDisease ? relevantDisease.disease.replace(/_/g, ' ') : 'General Case'}</span>
+                    </td>
+                    <td>${imgIndicator}</td>
+                    <td>${actionButton}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function approvePatient(patientId) {
+            try {
+                const doctor = window.currentDoctorRef();
+                const response = await fetch(`/api/patients/${patientId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        status: 'Assigned',
+                        doctor_id: doctor.uid,
+                        doctor_name: doctor.name
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Patient has been successfully assigned to you.');
+                    loadDoctorDashboard();
+                }
+            } catch (error) {
+                alert('Error approving patient.');
+            }
+        }
+
+        function viewImages(patientId) {
+            const patient = doctorPatients.find(p => p.id === patientId);
+            if (!patient || !patient.uploaded_images || patient.uploaded_images.length === 0) return;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,14,26,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:32px;backdrop-filter:blur(8px);';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+            let imagesHtml = patient.uploaded_images.map(img => {
+                const ext = img.split('.').pop().toLowerCase();
+                if (ext === 'pdf') {
+                    return `<div style="width:200px;height:200px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;"><span style="font-size:48px;">📄</span><span style="font-size:12px;color:var(--text-muted);">${img.substring(13)}</span></div>`;
+                }
+                return `<img src="/uploads/${img}" alt="Patient image" style="max-width:280px;max-height:280px;border-radius:12px;border:1px solid var(--border-color);object-fit:cover;">`;
+            }).join('');
+
+            modal.innerHTML = `
+                <div style="text-align:center;margin-bottom:20px;">
+                    <h3 style="font-size:20px;font-weight:600;">${patient.name}'s Medical Files</h3>
+                </div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">${imagesHtml}</div>
+                <button onclick="this.closest('div').remove()" style="margin-top:24px;padding:10px 28px;background:var(--bg-glass);border:1px solid var(--border-color);border-radius:8px;color:var(--text-primary);cursor:pointer;">✕ Close Viewer</button>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString('en-IN', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTime();
+            setInterval(updateTime, 60000);
+            setInterval(loadDoctorDashboard, 30000);
+        });
+    </script>
+</body>
+</html>

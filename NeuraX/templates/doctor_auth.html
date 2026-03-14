@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Portal | JanArogyaAI</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👨‍⚕️</text></svg>">
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeYFfT8-6Gp8Ny9nYlmPpxo8wlaPPqaEc",
+            authDomain: "janarogyaai-b986f.firebaseapp.com",
+            projectId: "janarogyaai-b986f",
+            storageBucket: "janarogyaai-b986f.firebasestorage.app",
+            messagingSenderId: "547534016067",
+            appId: "1:547534016067:web:8ee578af16b6f460ec8ef6",
+            measurementId: "G-K9PL78L0TJ"
+        };
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let isOtpSent = false;
+        let isDoctorVerified = false;
+
+        window.registerDoctor = async function(e){
+            e.preventDefault();
+            const btn = document.getElementById("regBtn");
+            const ogText = btn.innerHTML;
+            
+            try {
+                const name = document.getElementById("doctorName").value;
+                const hospitalId = document.getElementById("hospitalId").value;
+                const specialization = document.getElementById("specialization").value;
+                const email = document.getElementById("doctorEmail").value;
+                const password = document.getElementById("doctorPassword").value;
+                const licenseId = document.getElementById("medicalLicense").value;
+
+                if (!specialization) {
+                    throw new Error("Please select your professional specialization.");
+                }
+
+                if (!licenseId.trim()) {
+                    throw new Error("Medical License ID is required.");
+                }
+
+                // If OTP hasn't been sent yet, send it first
+                if (!isOtpSent) {
+                    // Verify Hospital ID First
+                    btn.innerHTML = "Verifying Hospital ID...";
+                    let hospitalSnap;
+                    try {
+                        const hospitalRef = doc(db, "hospitals", hospitalId);
+                        hospitalSnap = await getDoc(hospitalRef);
+                    } catch (dbError) {
+                        console.error("Firestore Error:", dbError);
+                        throw new Error("Could not verify hospital. Please check your internet connection or Firebase permissions.");
+                    }
+
+                    if (!hospitalSnap.exists()) {
+                        throw new Error("Hospital ID not found. Ensure the hospital is registered and the UID is correct.");
+                    }
+
+                    // Hospital verified, send OTP
+                    btn.innerHTML = "Sending Verification Code...";
+                    btn.disabled = true;
+                    
+                    const otpRes = await fetch('/api/send-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email })
+                    });
+                    const otpData = await otpRes.json();
+                    
+                    if (otpData.success) {
+                        isOtpSent = true;
+                        // Show OTP input
+                        document.getElementById('otpGroup').style.display = 'block';
+                        btn.innerHTML = "Verify Code & Finalize Registration";
+                        alert("An OTP has been sent to your email. Please check your inbox (and spam folder) and enter it below to register.");
+                    } else {
+                        throw new Error(otpData.error || "Failed to send OTP.");
+                    }
+                    
+                    btn.disabled = false;
+                    return; // Stop here and wait for the user to type OTP and submit again
+                }
+
+                // If OTP has been sent, verify it
+                const otpInput = document.getElementById("doctorOtp").value;
+                if (!otpInput) {
+                    throw new Error("Please enter the OTP sent to your email.");
+                }
+
+                btn.innerHTML = "Verifying & Registering...";
+                btn.disabled = true;
+
+                // Call Verify API
+                const verifyRes = await fetch('/api/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, otp: otpInput })
+                });
+                const verifyData = await verifyRes.json();
+
+                if (!verifyData.success) {
+                    throw new Error(verifyData.error || "Invalid OTP entered.");
+                }
+
+                // Proceed with Firebase registration
+                const user = await createUserWithEmailAndPassword(auth,email,password);
+                
+                await setDoc(doc(db,"doctors",user.user.uid),{
+                    name, hospitalId, specialization, email, uid:user.user.uid, licenseId: licenseId
+                });
+                
+                alert("Email Verified & Doctor Registered Successfully. You can now login.");
+                
+                // Reset form state
+                isOtpSent = false;
+                document.getElementById('otpGroup').style.display = 'none';
+                e.target.reset();
+                showSection('login');
+                
+            } catch (err) {
+                console.error(err);
+                if (err.code === 'auth/email-already-in-use') {
+                    alert("Error: This email is already registered. Please login instead, or use a different email.");
+                } else {
+                    alert("Error: " + err.message);
+                }
+            } finally {
+                if(!isOtpSent || isDoctorVerified) {
+                    btn.innerHTML = "Register Now";
+                } else if(isOtpSent) {
+                    btn.innerHTML = "Verify Code & Finalize Registration";
+                }
+                btn.disabled = false;
+                btn.style.opacity = "1";
+            }
+        }
+
+        window.loginDoctor = async function(e){
+            e.preventDefault();
+            const btn = document.getElementById("loginBtn");
+            const ogText = btn.innerHTML;
+            btn.innerHTML = "Logging in...";
+            try {
+                const email = document.getElementById("loginEmail").value;
+                const password = document.getElementById("loginPassword").value;
+                await signInWithEmailAndPassword(auth,email,password);
+                window.location.href="/doctor_dashboard";
+            } catch (err) {
+                console.error(err);
+                if (err.code === 'auth/invalid-credential') {
+                    alert("Error: Invalid email or password. Please check your spelling and try again.");
+                } else {
+                    alert("Error: " + err.message);
+                }
+            }
+            btn.innerHTML = ogText;
+        }
+
+        window.showSection = function(section) {
+            if (section === 'login') {
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('registerSection').style.display = 'none';
+                document.getElementById('tabLogin').classList.add('active');
+                document.getElementById('tabRegister').classList.remove('active');
+            } else {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('registerSection').style.display = 'block';
+                document.getElementById('tabRegister').classList.add('active');
+                document.getElementById('tabLogin').classList.remove('active');
+            }
+        }
+
+        window.onload = () => {
+            if(window.location.hash === '#register') {
+                showSection('register');
+            } else {
+                showSection('login');
+            }
+        }
+    </script>
+
+    <style>
+        .auth-container {
+            max-width: 500px;
+            margin: 120px auto 60px;
+            position: relative;
+            z-index: 10;
+        }
+        .form-section { display: none; }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .tab-btn:hover { color: var(--text-primary); }
+        .tab-btn.active {
+            color: var(--primary-400);
+            border-bottom-color: var(--primary-400);
+        }
+        .full-width { width: 100%; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-orbs">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
+
+    <nav class="navbar" id="navbar">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">🧬</div>
+            <span class="nav-title">JanArogyaAI</span>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/patient" class="nav-link">Patient Portal</a>
+            <a href="/hospital_auth" class="nav-link">Hospital Portal</a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="feature-card" style="padding: 0; overflow: hidden;">
+            <div class="tabs">
+                <button class="tab-btn active" id="tabLogin" onclick="showSection('login')">Doctor Login</button>
+                <button class="tab-btn" id="tabRegister" onclick="showSection('register')">Register</button>
+            </div>
+            
+            <div style="padding: 30px;">
+                <div id="loginSection" class="form-section" style="display: block;">
+                    <h2 class="section-title" style="font-size: 24px; text-align: center; margin-bottom: 24px;">Welcome Back 👋</h2>
+                    <form onsubmit="loginDoctor(event)">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" id="loginEmail" class="form-input" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required>
+                        </div>
+                        <button type="submit" id="loginBtn" class="btn btn-primary full-width" style="background: var(--gradient-primary); border: none; padding: 14px; font-size: 16px; font-weight: 600; border-radius: 8px; color: white; cursor: pointer;">Sign In</button>
+                    </form>
+                </div>
+
+                <div id="registerSection" class="form-section">
+                    <h2 class="section-title" style="font-size: 24px; text-align: center; margin-bottom: 24px;">Create Doctor Account</h2>
+                    <form onsubmit="registerDoctor(event)">
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Doctor Name</label>
+                            <input type="text" id="doctorName" class="form-input" placeholder="e.g. Dr. John Doe" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Hospital UID</label>
+                            <input type="text" id="hospitalId" class="form-input" placeholder="Hospital unique identifier" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Professional Specialization</label>
+                            <select id="specialization" class="form-input" required style="background: var(--bg-card); color: var(--text-primary); cursor: pointer;">
+                                <option value="" disabled selected>Select your specialization...</option>
+                                <option value="General Physician">General Physician</option>
+                                <option value="Cardiologist">Cardiologist (Heart)</option>
+                                <option value="Dermatologist">Dermatologist (Skin Care)</option>
+                                <option value="ENT Specialist">ENT Specialist (Ear, Nose, Throat)</option>
+                                <option value="Orthopedic Surgeon">Orthopedic Surgeon (Bones/Joints)</option>
+                                <option value="Pediatrician">Pediatrician (Child Care)</option>
+                                <option value="Neurologist">Neurologist (Brain/Nerves)</option>
+                                <option value="Psychiatrist">Psychiatrist (Mental Health)</option>
+                                <option value="Oncologist">Oncologist (Cancer Care)</option>
+                                <option value="Gynecologist">Gynecologist (Women's Health)</option>
+                                <option value="Ophthalmologist">Ophthalmologist (Eye Care)</option>
+                                <option value="Dentist">Dentist (Dental Care)</option>
+                                <option value="Other Specialist">Other Specialist</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Medical License ID</label>
+                            <input type="text" id="medicalLicense" class="form-input" placeholder="e.g. MCI-12345" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" id="doctorEmail" class="form-input" placeholder="Professional email" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="doctorPassword" class="form-input" placeholder="Create a strong password" required>
+                        </div>
+                        <div class="form-group" id="otpGroup" style="margin-bottom: 24px; display: none;">
+                            <label class="form-label" style="color: var(--primary-400);">Verification Code (OTP)</label>
+                            <input type="text" id="doctorOtp" class="form-input" placeholder="Enter the 6-digit code sent to your email" style="border-color: var(--primary-400);">
+                        </div>
+                        <button type="submit" id="regBtn" class="btn btn-primary full-width" style="background: var(--gradient-primary); border: none; padding: 14px; font-size: 16px; font-weight: 600; border-radius: 8px; color: white; cursor: pointer;">Register Now</button>
+                    </form>
+                    <div style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
+                        Solo Practitioner? <a href="/hospital_auth#register" style="color: var(--primary-400); text-decoration: none; font-weight: 600;">Register your clinic first</a>.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

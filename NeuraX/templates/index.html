@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NeuraX - AI-Powered Remote Healthcare Platform for early disease detection, health risk monitoring, and hospital management.">
+    <title>JanArogyaAI | AI-Powered Remote Healthcare Platform</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-grid"></div>
+    <div class="bg-orbs">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">🧬</div>
+            <span class="nav-title">JanArogyaAI</span>
+        </a>
+        <div class="nav-links">
+            <a href="#features" class="nav-link">Features</a>
+            <a href="#how-it-works" class="nav-link">How It Works</a>
+            <div style="display: flex; align-items: center; gap: 8px; border-left: 1px solid var(--border-color); padding-left: 12px; margin-left: 4px;">
+                <a href="/hospital_auth" class="nav-link">Hospitals</a>
+                <a href="/doctor_auth" class="nav-link">Doctors</a>
+            </div>
+            <a href="/patient" class="nav-btn">Patient Portal →</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="dot"></span>
+                AI-Powered Healthcare Platform
+            </div>
+            <h1 class="hero-title">
+                Healthcare Access,<br>
+                <span class="gradient-text">Reimagined with AI</span>
+            </h1>
+            <p class="hero-subtitle">
+                Early disease detection and health risk monitoring powered by machine learning. 
+                Bridging the healthcare gap for rural and underserved communities with 
+                intelligent triage classification and hospital resource management.
+            </p>
+            <div class="hero-actions" style="flex-direction: column; gap: 24px; align-items: center;">
+                <div>
+                    <a href="/patient" class="btn-hero btn-hero-primary" style="padding: 18px 40px; font-size: 18px;">
+                        🩺 Patient Dashboard
+                    </a>
+                </div>
+                
+                <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; background: var(--bg-glass); padding: 20px 30px; border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+                    <!-- Hospital Section -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                        <span class="section-label" style="margin-bottom: 0; color: var(--text-primary); font-size: 14px;">🏥 For Hospitals</span>
+                        <div style="display: flex; gap: 12px;">
+                            <a href="/hospital_auth#register" class="btn-hero btn-hero-primary" style="padding: 10px 20px; font-size: 14px;">Register</a>
+                            <a href="/hospital_auth#login" class="btn-hero btn-hero-secondary" style="padding: 10px 20px; font-size: 14px;">Login</a>
+                        </div>
+                    </div>
+                    
+                    <div style="width: 1px; background: var(--border-color); margin: 0 10px;"></div>
+
+                    <!-- Doctor Section -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                        <span class="section-label" style="margin-bottom: 0; color: var(--text-primary); font-size: 14px;">👨‍⚕️ For Doctors</span>
+                        <div style="display: flex; gap: 12px;">
+                            <a href="/doctor_auth#register" class="btn-hero btn-hero-primary" style="padding: 10px 20px; font-size: 14px;">Register</a>
+                            <a href="/doctor_auth#login" class="btn-hero btn-hero-secondary" style="padding: 10px 20px; font-size: 14px;">Login</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-number">98.5%</div>
+                    <div class="stat-label">Model Accuracy</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">25+</div>
+                    <div class="stat-label">Symptom Analysis</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">3-Tier</div>
+                    <div class="stat-label">Triage System</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">AES-256</div>
+                    <div class="stat-label">Encryption</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="section-header">
+            <div class="section-label">Platform Capabilities</div>
+            <h2 class="section-title">Intelligent Healthcare at Your Fingertips</h2>
+            <p class="section-subtitle">
+                Our platform combines advanced machine learning with intuitive design 
+                to deliver accessible healthcare screening for everyone.
+            </p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card animate-in">
+                <div class="feature-icon blue">🤖</div>
+                <h3 class="feature-title">AI Health Risk Prediction</h3>
+                <p class="feature-desc">
+                    Random Forest ML model analyzes symptoms and vital parameters 
+                    to predict health risk levels with high accuracy and confidence scores.
+                </p>
+            </div>
+            <div class="feature-card animate-in">
+                <div class="feature-icon red">🚨</div>
+                <h3 class="feature-title">Smart Triage Classification</h3>
+                <p class="feature-desc">
+                    Automatically categorizes patients into Emergency, Urgent, or Routine 
+                    levels to prioritize critical cases and optimize hospital workflows.
+                </p>
+            </div>
+            <div class="feature-card animate-in">
+                <div class="feature-icon green">📊</div>
+                <h3 class="feature-title">Explainable AI Insights</h3>
+                <p class="feature-desc">
+                    Transparent predictions with feature importance analysis showing 
+                    exactly which factors contribute most to the health risk assessment.
+                </p>
+            </div>
+            <div class="feature-card animate-in">
+                <div class="feature-icon purple">🏥</div>
+                <h3 class="feature-title">Hospital Management Dashboard</h3>
+                <p class="feature-desc">
+                    Real-time patient monitoring, resource allocation, and workflow 
+                    management tools for healthcare providers and administrators.
+                </p>
+            </div>
+            <div class="feature-card animate-in">
+                <div class="feature-icon orange">🔒</div>
+                <h3 class="feature-title">Secure Medical Records</h3>
+                <p class="feature-desc">
+                    AES-256 encryption protects all sensitive patient data with 
+                    role-based access control and comprehensive audit logging.
+                </p>
+            </div>
+            <div class="feature-card animate-in">
+                <div class="feature-icon teal">📱</div>
+                <h3 class="feature-title">Remote Accessibility</h3>
+                <p class="feature-desc">
+                    Designed for rural and underserved areas with responsive interface 
+                    that works on any device — from smartphones to medical kiosks.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="features-section" id="how-it-works" style="padding-top: 40px;">
+        <div class="section-header">
+            <div class="section-label">How It Works</div>
+            <h2 class="section-title">From Symptoms to Smart Diagnosis</h2>
+            <p class="section-subtitle">
+                A simple 4-step process powered by machine learning to deliver 
+                rapid health assessments and intelligent triage.
+            </p>
+        </div>
+
+        <div class="features-grid" style="max-width: 1000px;">
+            <div class="feature-card animate-in">
+                <div class="feature-icon blue" style="font-size: 20px; font-weight: 800;">01</div>
+                <h3 class="feature-title">Input Health Data</h3>
+                <p class="feature-desc">
+                    Patients enter their symptoms, vital parameters (BP, heart rate, 
+                    temperature, SpO2), and basic health information through a simple form.
+                </p>
+            </div>
+            <div class="feature-card animate-in">
+                <div class="feature-icon green" style="font-size: 20px; font-weight: 800;">02</div>
+                <h3 class="feature-title">AI Analysis</h3>
+                <p class="feature-desc">
+                    Our Random Forest ML model processes the data, analyzing patterns 
+                    across 25+ health indicators to predict risk levels.
+                </p>
+            </div>
+            <div class="feature-card animate-in">
+                <div class="feature-icon orange" style="font-size: 20px; font-weight: 800;">03</div>
+                <h3 class="feature-title">Triage Classification</h3>
+                <p class="feature-desc">
+                    The system categorizes urgency into Emergency, Urgent, or Routine, 
+                    with confidence scores and contributing factor analysis.
+                </p>
+            </div>
+            <div class="feature-card animate-in">
+                <div class="feature-icon purple" style="font-size: 20px; font-weight: 800;">04</div>
+                <h3 class="feature-title">Hospital Resource Allocation</h3>
+                <p class="feature-desc">
+                    Healthcare providers receive prioritized patient lists, enabling 
+                    efficient resource allocation and timely medical interventions.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="features-section" style="padding-top: 40px; padding-bottom: 80px;">
+        <div class="section-header">
+            <div class="section-label">Technical Architecture</div>
+            <h2 class="section-title">Built with Cutting-Edge Technology</h2>
+        </div>
+        <div class="features-grid" style="max-width: 1000px;">
+            <div class="feature-card animate-in" style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 16px;">🐍</div>
+                <h3 class="feature-title">Python + Flask</h3>
+                <p class="feature-desc">Backend API with RESTful architecture</p>
+            </div>
+            <div class="feature-card animate-in" style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 16px;">🌲</div>
+                <h3 class="feature-title">Random Forest</h3>
+                <p class="feature-desc">Scikit-learn ML for risk prediction</p>
+            </div>
+            <div class="feature-card animate-in" style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 16px;">🎨</div>
+                <h3 class="feature-title">Modern Frontend</h3>
+                <p class="feature-desc">HTML5, CSS3, JavaScript with premium UI</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© 2026 NeuraX — AI-Powered Remote Healthcare Platform | 
+        <a href="/patient">Patient Portal</a> · <a href="/hospital">Hospital Portal</a></p>
+        <p style="margin-top: 8px; font-size: 12px;">Built with ❤️ for accessible healthcare. Powered by ML & Explainable AI.</p>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Intersection Observer for animations
+        const animateElements = document.querySelectorAll('.animate-in');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        animateElements.forEach(el => {
+            el.style.animationPlayState = 'paused';
+            observer.observe(el);
+        });
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</html>
