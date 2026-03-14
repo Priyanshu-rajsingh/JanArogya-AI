@@ -67,4 +67,22 @@ Build a secure AI-based healthcare system that enables:
 - Remote patient monitoring
 - Efficient hospital resource management
 
+
+## Development Roadmap
+
+Phase 1
+Problem research and architecture design
+
+Phase 2
+AI model development
+
+Phase 3
+Patient interface implementation
+
+Phase 4
+Doctor dashboard development
+
+Phase 5
+Integration and testing
+
 TEAM : HackStorm
